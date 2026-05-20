@@ -1,0 +1,44 @@
+# Documentation (dev reference, not source code)
+Docs/
+
+# Dependencies
+node_modules/
+**/node_modules/
+.venv/
+backend/.venv/
+
+# Build artifacts
+.next/
+dist/
+build/
+*.egg-info/
+
+# Cache
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.next/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database
+*.db
+uploads/
