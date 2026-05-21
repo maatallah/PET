@@ -2,6 +2,7 @@ from app.debug.router import router as debug_router
 from app.routers.execution import router as execution_router
 from app.routers.files import router as files_router
 from app.routers.health import router as health_router
+from app.routers.optimizer import router as optimizer_router
 from app.routers.patterns import router as patterns_router
 from app.routers.projects import router as projects_router
 from app.routers.prompts import router as prompts_router
@@ -21,6 +22,7 @@ routers = [
     sessions_router,
     prompts_router,
     execution_router,
+    optimizer_router,
     files_router,
     search_router,
     templates_router,

@@ -70,6 +70,15 @@ export interface TokenEstimate {
   tokens: number;
   cost: number;
   model: string;
+  context_window: number;
+  usage_pct: number;
+}
+
+export interface OptimizeResult {
+  issues: string;
+  suggestions: string;
+  optimized_prompt: string;
+  raw_response: string;
 }
 
 export interface ExecuteResult {
@@ -213,6 +222,13 @@ export const api = {
   // Export
   exportPromptUrl: (sessionId: string, promptId: string, format: 'markdown' | 'json' = 'markdown') =>
     `${BASE_URL}/sessions/${sessionId}/prompts/${promptId}/export?format=${format}`,
+
+  // Optimizer
+  optimizePrompt: (sessionId: string, promptId: string, data: { provider?: string; model?: string }) =>
+    request<OptimizeResult>(`/prompts/${promptId}/optimize`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Health
   health: () => request<{ status: string }>('/health'),

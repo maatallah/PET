@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, Prompt, ExecuteResult, FileInfo, TokenEstimate } from '@/lib/api';
+import { api, Prompt, ExecuteResult, FileInfo, TokenEstimate, OptimizeResult } from '@/lib/api';
 
 function PromptDetail({
   workspaceId,
@@ -30,6 +30,8 @@ function PromptDetail({
   const [previewText, setPreviewText] = useState<string | null>(null);
   const [tokenEstimate, setTokenEstimate] = useState<TokenEstimate | null>(null);
   const [providers, setProviders] = useState<string[]>([]);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null);
   const estimateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -106,6 +108,20 @@ function PromptDetail({
       setError(err instanceof Error ? err.message : 'Execution failed');
     } finally {
       setExecuting(false);
+    }
+  };
+
+  const handleOptimize = async () => {
+    setError(null);
+    setOptimizeResult(null);
+    setOptimizing(true);
+    try {
+      const res = await api.optimizePrompt(sessionId, promptId, { provider });
+      setOptimizeResult(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Optimization failed');
+    } finally {
+      setOptimizing(false);
     }
   };
 
@@ -229,9 +245,22 @@ function PromptDetail({
                     ))
                   )}
                 </select>
-                <span className="text-xs text-zinc-400">
-                  {tokenEstimate ? `~${tokenEstimate.tokens} tokens · ~$${tokenEstimate.cost.toFixed(6)}` : ''}
-                </span>
+                {tokenEstimate && (
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <span>~{tokenEstimate.tokens} tok</span>
+                    <div className="h-2 w-20 overflow-hidden rounded-full bg-zinc-200">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(tokenEstimate.usage_pct, 100)}%`,
+                          backgroundColor: tokenEstimate.usage_pct > 80 ? '#ef4444' : tokenEstimate.usage_pct > 50 ? '#f59e0b' : '#22c55e',
+                        }}
+                      />
+                    </div>
+                    <span>{tokenEstimate.usage_pct}%</span>
+                    <span>· ${tokenEstimate.cost.toFixed(6)}</span>
+                  </div>
+                )}
                 <button
                   onClick={() => handleExecute(true)}
                   disabled={executing}
@@ -266,6 +295,13 @@ function PromptDetail({
                 >
                   A/B Compare
                 </Link>
+                <button
+                  onClick={handleOptimize}
+                  disabled={optimizing}
+                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  {optimizing ? 'Optimizing...' : 'Optimize'}
+                </button>
             </div>
         </div>
         </>
@@ -300,6 +336,33 @@ function PromptDetail({
             {result.tokens_output !== null && <span>Output tokens: {result.tokens_output}</span>}
             {result.cost_estimate !== null && <span>Cost: ${result.cost_estimate.toFixed(6)}</span>}
           </div>
+        </div>
+      )}
+
+      {optimizeResult && (
+        <div className="mt-6 space-y-4 rounded-lg border border-zinc-200 p-4">
+          <h3 className="text-sm font-semibold">Optimization Suggestions</h3>
+
+          {optimizeResult.issues && (
+            <div>
+              <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Issues</h4>
+              <pre className="whitespace-pre-wrap rounded-md bg-red-50 p-3 text-sm">{optimizeResult.issues}</pre>
+            </div>
+          )}
+
+          {optimizeResult.suggestions && (
+            <div>
+              <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Suggestions</h4>
+              <pre className="whitespace-pre-wrap rounded-md bg-amber-50 p-3 text-sm">{optimizeResult.suggestions}</pre>
+            </div>
+          )}
+
+          {optimizeResult.optimized_prompt && (
+            <div>
+              <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-400">Optimized Prompt</h4>
+              <pre className="whitespace-pre-wrap rounded-md bg-green-50 p-3 text-sm">{optimizeResult.optimized_prompt}</pre>
+            </div>
+          )}
         </div>
       )}
 

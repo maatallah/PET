@@ -6,7 +6,7 @@
 |-------|----------|-------|
 | 0 — Foundation | 8/9 🔴 1 | Scaffold, conventions, database |
 | 1 — Core MVP | 29/29 🟢 | API, engine, frontend |
-| 2 — Enhanced | 5/8 🟡 | Real-time token estimator, export, A/B compare, full-text search, tag filtering |
+| 2 — Enhanced | 8/8 🟢 | Prompt optimizer, A/B compare, token estimator, multi-model, export, full-text search, tag filtering, context visualizer |
 | 3 — Advanced | 0/8 🔴 | Workflows, analytics, collaboration |
 
 **Blocks:** Phase 0.8 (PostgreSQL) blocked until production deployment.
@@ -25,7 +25,11 @@
 - Full-text search: `GET /search?q=` across workspaces, projects, sessions, prompts with breadcrumb navigation
 - Search bar in header (debounced 300ms, dropdown results)
 - Tag filtering on sessions: `GET /sessions?tags=tag1,tag2` with Python-level intersection filter
-- Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `ExecuteResult` now includes all response fields
+- Context window visualizer: gauge bar on prompt detail page showing token usage % with color (green/yellow/red)
+- `MODEL_CONTEXT_WINDOWS` map + `get_context_window()` in tokenizer for 15+ models
+- Prompt optimizer: `POST /prompts/{id}/optimize` sends prompt to LLM with meta-prompt, returns issues/suggestions/optimized version
+- Optimize button and results display on prompt detail page
+- Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `optimizePrompt`, `ExecuteResult` + `OptimizeResult` + `TokenEstimate` interfaces
 
 **OpenRouter Provider:**
 - 4th LLM provider (OpenAI-compatible, uses `OPENROUTER_API_KEY`)
@@ -57,6 +61,9 @@
 | 2026-05-20 | A/B compare = new page, not inline | Cleaner UX for side-by-side comparison |
 | 2026-05-20 | Full-text search via single `GET /search` endpoint | Searches all 4 entity types, returns breadcrumb paths |
 | 2026-05-20 | Tag filtering at Python level, not SQL | SQLite JSON queries are complex; small dataset justifies Python filter |
+| 2026-05-20 | Prompt optimizer uses meta-prompt with LLM | Sends current prompt to LLM with expert prompt engineering instructions |
+| 2026-05-20 | Context window via `get_context_window()` heuristic | Uses substring matching against known model names |
+| 2026-05-20 | Optimizer route = `/prompts/{id}/optimize` (top-level) | Not nested under sessions — session context not needed for optimization |
 | 2026-05-19 | UUID as strings `Uuid(as_uuid=False)` | Avoids uuid↔str coercion across layers |
 | 2026-05-19 | CORS uses `CORS_ORIGINS=*` | pydantic-settings reads as str; expand in code |
 | 2026-05-19 | API keys via pydantic-settings from `.env` | Consistent config, not `os.getenv` |
@@ -78,7 +85,6 @@
 
 ## Next Steps
 
-1. Phase 2 remaining features: prompt optimizer (AI suggestions), full-text search, tag-based filtering, context window visualizer
-2. Phase 3 features: prompt chaining, RAG context builder, analytics dashboard, team collaboration, injection scanner, API key vault
-3. Set valid API keys in `backend/.env` for live execution
-4. Push subsequent commits to GitHub
+1. **Phase 3 features:** prompt chaining (visual workflow), RAG context builder, analytics dashboard, team collaboration, injection scanner, API key vault
+2. Set valid API keys in `backend/.env` for live execution (OpenAI, Google, OpenRouter)
+3. Push subsequent commits to GitHub
