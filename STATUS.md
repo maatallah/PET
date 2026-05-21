@@ -6,7 +6,7 @@
 |-------|----------|-------|
 | 0 — Foundation | 8/9 🔴 1 | Scaffold, conventions, database |
 | 1 — Core MVP | 29/29 🟢 | API, engine, frontend |
-| 2 — Enhanced | 3/8 🟡 | Real-time token estimator, export, A/B compare |
+| 2 — Enhanced | 5/8 🟡 | Real-time token estimator, export, A/B compare, full-text search, tag filtering |
 | 3 — Advanced | 0/8 🔴 | Workflows, analytics, collaboration |
 
 **Blocks:** Phase 0.8 (PostgreSQL) blocked until production deployment.
@@ -22,6 +22,9 @@
 - Dynamic provider dropdown — loads from `GET /providers` instead of hardcoded list
 - Live token estimate display on prompt detail page (debounced 300ms)
 - Export buttons (.md, .json, A/B Compare) on prompt detail page
+- Full-text search: `GET /search?q=` across workspaces, projects, sessions, prompts with breadcrumb navigation
+- Search bar in header (debounced 300ms, dropdown results)
+- Tag filtering on sessions: `GET /sessions?tags=tag1,tag2` with Python-level intersection filter
 - Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `ExecuteResult` now includes all response fields
 
 **OpenRouter Provider:**
@@ -52,6 +55,8 @@
 | 2026-05-20 | `GET /providers` endpoint | Frontend loads dynamically instead of hardcoding |
 | 2026-05-20 | Token estimator uses debounced POST | Avoids per-keystroke API calls, 300ms debounce |
 | 2026-05-20 | A/B compare = new page, not inline | Cleaner UX for side-by-side comparison |
+| 2026-05-20 | Full-text search via single `GET /search` endpoint | Searches all 4 entity types, returns breadcrumb paths |
+| 2026-05-20 | Tag filtering at Python level, not SQL | SQLite JSON queries are complex; small dataset justifies Python filter |
 | 2026-05-19 | UUID as strings `Uuid(as_uuid=False)` | Avoids uuid↔str coercion across layers |
 | 2026-05-19 | CORS uses `CORS_ORIGINS=*` | pydantic-settings reads as str; expand in code |
 | 2026-05-19 | API keys via pydantic-settings from `.env` | Consistent config, not `os.getenv` |

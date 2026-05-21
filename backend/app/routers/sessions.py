@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -17,11 +17,23 @@ async def create_session(
 
 @router.get("", response_model=list[SessionRead])
 async def list_sessions(
-    project_id: str, skip: int = 0, limit: int = 100, session: AsyncSession = Depends(get_session)
+    project_id: str,
+    skip: int = 0,
+    limit: int = 100,
+    tags: str | None = Query(None, description="Comma-separated tag filter"),
+    session: AsyncSession = Depends(get_session),
 ):
-    return await session_service.list(
+    sessions = await session_service.list(
         session, parent_field="project_id", parent_id=project_id, skip=skip, limit=limit
     )
+    if tags:
+        filter_tags = {t.strip().lower() for t in tags.split(",") if t.strip()}
+        if filter_tags:
+            sessions = [
+                s for s in sessions
+                if s.tags and filter_tags.intersection({t.lower() for t in s.tags})
+            ]
+    return sessions
 
 
 @router.get("/{session_id}", response_model=SessionRead)

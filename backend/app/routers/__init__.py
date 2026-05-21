@@ -6,6 +6,7 @@ from app.routers.patterns import router as patterns_router
 from app.routers.projects import router as projects_router
 from app.routers.prompts import router as prompts_router
 from app.routers.providers import router as providers_router
+from app.routers.search import router as search_router
 from app.routers.sessions import router as sessions_router
 from app.routers.templates import router as templates_router
 from app.routers.tokenize import router as tokenize_router
@@ -21,6 +22,7 @@ routers = [
     prompts_router,
     execution_router,
     files_router,
+    search_router,
     templates_router,
     tokenize_router,
     debug_router,
