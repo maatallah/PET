@@ -66,12 +66,26 @@ export interface Prompt {
   updated_at: string | null;
 }
 
+export interface TokenEstimate {
+  tokens: number;
+  cost: number;
+  model: string;
+}
+
 export interface ExecuteResult {
   resolved_prompt: string;
+  model_response?: string;
+  response?: string;
   tokens_input: number | null;
   tokens_output: number | null;
   cost_estimate: number | null;
-  response?: string;
+  latency_ms: number | null;
+  finish_reason: string | null;
+  detected_variables?: string[];
+  unsubstituted_variables?: string[];
+  prompt_id?: string;
+  id?: string;
+  created_at?: string;
 }
 
 export const api = {
@@ -156,7 +170,7 @@ export const api = {
   executePrompt: (
     sessionId: string,
     promptId: string,
-    data: { variables?: Record<string, string>; dry_run?: boolean; provider?: string },
+    data: { variables?: Record<string, string>; dry_run?: boolean; provider?: string; model?: string; model_params?: Record<string, unknown> },
   ) =>
     request<ExecuteResult>(`/sessions/${sessionId}/prompts/${promptId}/execute`, {
       method: 'POST',
@@ -188,6 +202,17 @@ export const api = {
 
   downloadFileUrl: (sessionId: string, fileId: string) =>
     `${BASE_URL}/sessions/${sessionId}/files/${fileId}/download`,
+
+  // Tokenize
+  estimateTokens: (text: string, model = 'gpt-4') =>
+    request<TokenEstimate>('/tokenize', {
+      method: 'POST',
+      body: JSON.stringify({ text, model }),
+    }),
+
+  // Export
+  exportPromptUrl: (sessionId: string, promptId: string, format: 'markdown' | 'json' = 'markdown') =>
+    `${BASE_URL}/sessions/${sessionId}/prompts/${promptId}/export?format=${format}`,
 
   // Health
   health: () => request<{ status: string }>('/health'),

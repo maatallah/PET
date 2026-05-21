@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, Prompt, ExecuteResult, FileInfo } from '@/lib/api';
+import { api, Prompt, ExecuteResult, FileInfo, TokenEstimate } from '@/lib/api';
 
 function PromptDetail({
   workspaceId,
@@ -28,17 +28,22 @@ function PromptDetail({
   const [filesError, setFilesError] = useState<string | null>(null);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
+  const [tokenEstimate, setTokenEstimate] = useState<TokenEstimate | null>(null);
+  const [providers, setProviders] = useState<string[]>([]);
+  const estimateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let ignore = false;
     (async () => {
       try {
-        const [p, f] = await Promise.all([
+        const [p, f, provs] = await Promise.all([
           api.getPrompt(sessionId, promptId),
           api.listFiles(sessionId),
+          fetch('http://127.0.0.1:8000/providers').then(r => r.json()),
         ]);
         if (!ignore) {
           setPrompt(p);
+          setProviders(provs);
           setFiles(f.sort((a, b) => b.created_at.localeCompare(a.created_at)));
         }
       } catch (err) {
@@ -49,6 +54,31 @@ function PromptDetail({
     })();
     return () => { ignore = true; };
   }, [sessionId, promptId]);
+
+  const updateEstimate = useCallback(async () => {
+    if (!prompt) return;
+    let text = `${prompt.system_prompt ?? ''}\n${prompt.user_prompt ?? ''}`;
+    if (prompt.variables) {
+      for (const v of prompt.variables) {
+        text = text.replaceAll(`{${v.name}}`, formValues[v.name] ?? `{${v.name}}`);
+      }
+    }
+    try {
+      const est = await api.estimateTokens(text);
+      setTokenEstimate(est);
+    } catch {
+      // ignore estimate errors
+    }
+  }, [prompt, formValues]);
+
+  useEffect(() => {
+    if (!prompt) return;
+    if (estimateTimer.current) clearTimeout(estimateTimer.current);
+    estimateTimer.current = setTimeout(updateEstimate, 300);
+    return () => {
+      if (estimateTimer.current) clearTimeout(estimateTimer.current);
+    };
+  }, [formValues, prompt, updateEstimate]);
 
   const handleDelete = async () => {
     setError(null);
@@ -183,17 +213,25 @@ function PromptDetail({
               </div>
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
                   className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
                 >
-                  <option value="openai">OpenAI</option>
-                  <option value="google">Google Gemini</option>
-                  <option value="ollama">Ollama</option>
-                  <option value="openrouter">OpenRouter</option>
+                  {providers.length === 0 ? (
+                    <option value="openai">OpenAI</option>
+                  ) : (
+                    providers.map((p) => (
+                      <option key={p} value={p}>
+                        {p === 'openai' ? 'OpenAI' : p === 'google' ? 'Google Gemini' : p === 'ollama' ? 'Ollama' : p === 'openrouter' ? 'OpenRouter' : p}
+                      </option>
+                    ))
+                  )}
                 </select>
+                <span className="text-xs text-zinc-400">
+                  {tokenEstimate ? `~${tokenEstimate.tokens} tokens · ~$${tokenEstimate.cost.toFixed(6)}` : ''}
+                </span>
                 <button
                   onClick={() => handleExecute(true)}
                   disabled={executing}
@@ -208,6 +246,26 @@ function PromptDetail({
                 >
                   {executing ? 'Executing...' : 'Run'}
                 </button>
+                <a
+                  href={api.exportPromptUrl(sessionId, promptId, 'markdown')}
+                  download
+                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+                >
+                  .md
+                </a>
+                <a
+                  href={api.exportPromptUrl(sessionId, promptId, 'json')}
+                  download
+                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+                >
+                  .json
+                </a>
+                <Link
+                  href={`/workspaces/${workspaceId}/projects/${projectId}/sessions/${sessionId}/prompts/${promptId}/compare`}
+                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+                >
+                  A/B Compare
+                </Link>
             </div>
         </div>
         </>

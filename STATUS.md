@@ -6,20 +6,38 @@
 |-------|----------|-------|
 | 0 — Foundation | 8/9 🔴 1 | Scaffold, conventions, database |
 | 1 — Core MVP | 29/29 🟢 | API, engine, frontend |
-| 2 — Enhanced | 0/8 🔴 | Optimizer, compare, multi-model, export |
+| 2 — Enhanced | 3/8 🟡 | Real-time token estimator, export, A/B compare |
 | 3 — Advanced | 0/8 🔴 | Workflows, analytics, collaboration |
 
 **Blocks:** Phase 0.8 (PostgreSQL) blocked until production deployment.
 
 ---
 
-## Completed (Last Session: 2026-05-20)
+## Completed (Session 2026-05-20)
 
-- Moved all documentation `.md` files to `Docs/` (gitignored dev reference)
-- Updated root `.gitignore` — added `Docs/`, `.vscode/`, `.idea/`, `*.log`, `.DS_Store`, `Thumbs.db`, `dist/`, `build/`, `*.egg-info/`
-- Created `.cursorignore` — excludes Docs/, deps, cache, env, IDE, OS files, logs, db files
-- Created `STATUS.md` — living document updated at end of each AI session
-- Kept only `AGENTS.md` + `.gitignore` + `.cursorignore` + source dirs in root
+**Phase 2 Features Built:**
+- `POST /tokenize` endpoint — live token count + cost estimation for any text
+- `GET /prompts/{id}/export?format=markdown|json` — export prompts as .md or .json
+- A/B comparison page at `/prompts/{id}/compare` — run same prompt with different providers/models side by side
+- Dynamic provider dropdown — loads from `GET /providers` instead of hardcoded list
+- Live token estimate display on prompt detail page (debounced 300ms)
+- Export buttons (.md, .json, A/B Compare) on prompt detail page
+- Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `ExecuteResult` now includes all response fields
+
+**OpenRouter Provider:**
+- 4th LLM provider (OpenAI-compatible, uses `OPENROUTER_API_KEY`)
+- 4 unit tests: name, execute success, custom params, import error handling
+
+**Context Optimization:**
+- Bloated docs moved to `Docs/` (gitignored)
+- `.cursorignore` created — excludes deps, docs, cache, env, IDE files
+- Improved `.gitignore` — added Docs/, OS, IDE, logs, build artifacts
+- `STATUS.md` at root — updated each session to carry state across AI sessions
+- Only `AGENTS.md`, `.gitignore`, `.cursorignore`, `STATUS.md` in root
+
+**Git/Deployment:**
+- Git init + initial commit (103 files, 8798 insertions)
+- Pushed to `github.com/maatallah/PET.git`
 
 ---
 
@@ -27,16 +45,19 @@
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-05-20 | Documentation moved to `Docs/` and gitignored | Bloated dev docs not needed in source tree; reduces agent context |
-| 2026-05-20 | `.cursorignore` created | Prevent AI agent from scanning dependencies, docs, cache |
-| 2026-05-20 | `STATUS.md` at root, updated each session | Avoids reinventing decisions; single source of truth for agent state |
-| 2026-05-20 | OpenRouter added as 4th LLM provider | OpenAI-compatible, uses `OPENROUTER_API_KEY`, default model `openai/gpt-4o-mini` |
-| 2026-05-19 | UUID stored as strings `Uuid(as_uuid=False)` | Avoids uuid↔str coercion across SQLAlchemy, Pydantic, URL params |
-| 2026-05-19 | CORS uses `CORS_ORIGINS=*` with code split to `["*"]` | pydantic-settings reads as str; expand in code |
+| 2026-05-20 | Docs moved to `Docs/` + gitignored | Reduces agent context bloat |
+| 2026-05-20 | `.cursorignore` created | Prevents AI scanning deps/docs/cache |
+| 2026-05-20 | `STATUS.md` updated each session | Single source of truth for agent state |
+| 2026-05-20 | OpenRouter as 4th provider | OpenAI-compatible, minimal code |
+| 2026-05-20 | `GET /providers` endpoint | Frontend loads dynamically instead of hardcoding |
+| 2026-05-20 | Token estimator uses debounced POST | Avoids per-keystroke API calls, 300ms debounce |
+| 2026-05-20 | A/B compare = new page, not inline | Cleaner UX for side-by-side comparison |
+| 2026-05-19 | UUID as strings `Uuid(as_uuid=False)` | Avoids uuid↔str coercion across layers |
+| 2026-05-19 | CORS uses `CORS_ORIGINS=*` | pydantic-settings reads as str; expand in code |
 | 2026-05-19 | API keys via pydantic-settings from `.env` | Consistent config, not `os.getenv` |
-| 2026-05-19 | Auto-generated `owner_id` UUID placeholder | No auth system exists yet; FK constraint satisfied |
-| 2026-05-19 | `ignore` cleanup pattern in every `useEffect` | Prevents stale state after StrictMode unmount/remount |
-| 2026-05-19 | pnpm `onlyBuiltDependencies` + `approve-builds` | pnpm 11 blocks build scripts by default |
+| 2026-05-19 | Auto-generated `owner_id` UUID | No auth; FK constraint satisfied |
+| 2026-05-19 | `ignore` pattern in every `useEffect` | Prevents stale state after StrictMode |
+| 2026-05-19 | pnpm `onlyBuiltDependencies` | pnpm 11 blocks build scripts by default |
 
 ---
 
@@ -52,7 +73,7 @@
 
 ## Next Steps
 
-1. Test end-to-end flow: Workspace -> Project -> Session -> Prompt -> Run with provider
-2. Verify workspace detail / project detail pages in browser (possible stale dev server 404)
-3. Phase 2 features: A/B comparison, token estimator, multi-model, export
-4. Initialize git repo and push to `git@github.com:maatallah/PET.git`
+1. Phase 2 remaining features: prompt optimizer (AI suggestions), full-text search, tag-based filtering, context window visualizer
+2. Phase 3 features: prompt chaining, RAG context builder, analytics dashboard, team collaboration, injection scanner, API key vault
+3. Set valid API keys in `backend/.env` for live execution
+4. Push subsequent commits to GitHub
