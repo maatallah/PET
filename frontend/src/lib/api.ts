@@ -74,6 +74,23 @@ export interface TokenEstimate {
   usage_pct: number;
 }
 
+export interface ScanResult {
+  findings: { type: string; severity: string; match: string }[];
+  safe: boolean;
+  total_issues: number;
+}
+
+export interface AnalyticsData {
+  total_runs: number;
+  total_tokens_input: number;
+  total_tokens_output: number;
+  total_cost: number;
+  avg_latency_ms: number;
+  avg_tokens_input: number;
+  avg_tokens_output: number;
+  avg_cost: number;
+}
+
 export interface OptimizeResult {
   issues: string;
   suggestions: string;
@@ -222,6 +239,13 @@ export const api = {
   // Export
   exportPromptUrl: (sessionId: string, promptId: string, format: 'markdown' | 'json' = 'markdown') =>
     `${BASE_URL}/sessions/${sessionId}/prompts/${promptId}/export?format=${format}`,
+
+  // Scanner
+  scanPrompt: (sessionId: string, promptId: string) =>
+    request<ScanResult>(`/prompts/${promptId}/scan`, { method: 'POST' }),
+
+  // Analytics
+  getAnalytics: () => request<AnalyticsData>('/analytics'),
 
   // Optimizer
   optimizePrompt: (sessionId: string, promptId: string, data: { provider?: string; model?: string }) =>

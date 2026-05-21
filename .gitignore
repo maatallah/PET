@@ -28,6 +28,8 @@ Thumbs.db
 
 # Logs
 *.log
+uvicorn-out.txt
+uvicorn-err.txt
 
 # Build artifacts
 dist/

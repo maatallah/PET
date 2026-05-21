@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, Prompt, ExecuteResult, FileInfo, TokenEstimate, OptimizeResult } from '@/lib/api';
+import { api, Prompt, ExecuteResult, FileInfo, TokenEstimate, OptimizeResult, ScanResult } from '@/lib/api';
 
 function PromptDetail({
   workspaceId,
@@ -32,6 +32,8 @@ function PromptDetail({
   const [providers, setProviders] = useState<string[]>([]);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const estimateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -108,6 +110,20 @@ function PromptDetail({
       setError(err instanceof Error ? err.message : 'Execution failed');
     } finally {
       setExecuting(false);
+    }
+  };
+
+  const handleScan = async () => {
+    setError(null);
+    setScanResult(null);
+    setScanning(true);
+    try {
+      const res = await api.scanPrompt(sessionId, promptId);
+      setScanResult(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Scan failed');
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -296,6 +312,13 @@ function PromptDetail({
                   A/B Compare
                 </Link>
                 <button
+                  onClick={handleScan}
+                  disabled={scanning}
+                  className="rounded-md border border-orange-300 px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 disabled:opacity-50"
+                >
+                  {scanning ? 'Scanning...' : 'Scan'}
+                </button>
+                <button
                   onClick={handleOptimize}
                   disabled={optimizing}
                   className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
@@ -336,6 +359,28 @@ function PromptDetail({
             {result.tokens_output !== null && <span>Output tokens: {result.tokens_output}</span>}
             {result.cost_estimate !== null && <span>Cost: ${result.cost_estimate.toFixed(6)}</span>}
           </div>
+        </div>
+      )}
+
+      {scanResult && (
+        <div className="mt-6 space-y-3 rounded-lg border border-zinc-200 p-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold">Security Scan</h3>
+            {scanResult.safe ? (
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">Safe</span>
+            ) : (
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">{scanResult.total_issues} issue(s)</span>
+            )}
+          </div>
+          {scanResult.findings.map((f, i) => (
+            <div key={i} className="rounded-md border border-zinc-100 p-3 text-sm">
+              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                f.severity === 'high' ? 'bg-red-100 text-red-700' : f.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-zinc-100 text-zinc-600'
+              }`}>{f.severity}</span>
+              <span className="ml-2 font-medium">{f.type}</span>
+              <p className="mt-1 font-mono text-xs text-zinc-500">Match: &ldquo;{f.match}&rdquo;</p>
+            </div>
+          ))}
         </div>
       )}
 

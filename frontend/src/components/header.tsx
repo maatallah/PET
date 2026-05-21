@@ -67,6 +67,9 @@ export default function Header() {
         <Link href="/workspaces" className="text-sm text-zinc-600 hover:text-zinc-900">
           Workspaces
         </Link>
+        <Link href="/analytics" className="text-sm text-zinc-600 hover:text-zinc-900">
+          Analytics
+        </Link>
 
         <div ref={ref} className="relative ml-auto">
           <input

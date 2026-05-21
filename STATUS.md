@@ -7,7 +7,7 @@
 | 0 — Foundation | 8/9 🔴 1 | Scaffold, conventions, database |
 | 1 — Core MVP | 29/29 🟢 | API, engine, frontend |
 | 2 — Enhanced | 8/8 🟢 | Prompt optimizer, A/B compare, token estimator, multi-model, export, full-text search, tag filtering, context visualizer |
-| 3 — Advanced | 0/8 🔴 | Workflows, analytics, collaboration |
+| 3 — Advanced | 3/8 🟡 | Injection scanner, analytics dashboard, RAG search |
 
 **Blocks:** Phase 0.8 (PostgreSQL) blocked until production deployment.
 
@@ -29,7 +29,14 @@
 - `MODEL_CONTEXT_WINDOWS` map + `get_context_window()` in tokenizer for 15+ models
 - Prompt optimizer: `POST /prompts/{id}/optimize` sends prompt to LLM with meta-prompt, returns issues/suggestions/optimized version
 - Optimize button and results display on prompt detail page
-- Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `optimizePrompt`, `ExecuteResult` + `OptimizeResult` + `TokenEstimate` interfaces
+- Frontend API client extended: `estimateTokens`, `exportPromptUrl`, `optimizePrompt`, `scanPrompt`, `getAnalytics`, `ExecuteResult` + `OptimizeResult` + `TokenEstimate` + `ScanResult` + `AnalyticsData` interfaces
+
+**Phase 3 Features Built:**
+- Prompt injection scanner: `POST /prompts/{id}/scan` — 7 pattern groups (ignore instructions, role hijack, DAN/jailbreak, system prompt leak, token smuggling, role reversal, payload splitting)
+- Scan button + severity-coded results display on prompt detail page
+- Analytics dashboard at `/analytics` — total runs, tokens, cost, avg latency
+- RAG context builder: `GET /rag/search?q=&session_id=` — keyword search over uploaded file content with snippet extraction
+- Header links for Analytics page
 
 **OpenRouter Provider:**
 - 4th LLM provider (OpenAI-compatible, uses `OPENROUTER_API_KEY`)
@@ -64,6 +71,9 @@
 | 2026-05-20 | Prompt optimizer uses meta-prompt with LLM | Sends current prompt to LLM with expert prompt engineering instructions |
 | 2026-05-20 | Context window via `get_context_window()` heuristic | Uses substring matching against known model names |
 | 2026-05-20 | Optimizer route = `/prompts/{id}/optimize` (top-level) | Not nested under sessions — session context not needed for optimization |
+| 2026-05-21 | Injection scanner uses regex pattern matching | 7 pattern groups with severity levels, no ML dependency |
+| 2026-05-21 | RAG search is simple keyword match over file content | MVP; no vector DB or embeddings needed yet |
+| 2026-05-21 | Analytics aggregates all PromptRun records | Single endpoint, no workspace/project scoping yet |
 | 2026-05-19 | UUID as strings `Uuid(as_uuid=False)` | Avoids uuid↔str coercion across layers |
 | 2026-05-19 | CORS uses `CORS_ORIGINS=*` | pydantic-settings reads as str; expand in code |
 | 2026-05-19 | API keys via pydantic-settings from `.env` | Consistent config, not `os.getenv` |
@@ -85,6 +95,6 @@
 
 ## Next Steps
 
-1. **Phase 3 features:** prompt chaining (visual workflow), RAG context builder, analytics dashboard, team collaboration, injection scanner, API key vault
+1. **Phase 3 remaining:** prompt chaining (visual workflow), team collaboration, API key vault, scheduled prompt runs, PostgreSQL migration
 2. Set valid API keys in `backend/.env` for live execution (OpenAI, Google, OpenRouter)
 3. Push subsequent commits to GitHub
